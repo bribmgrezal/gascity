@@ -1220,12 +1220,8 @@ func reconcileSessionBeadsTracedWithNamedDemand(
 						}
 						fmt.Fprintf(stderr, "config-drift %s: stored=%s current=%s cmd=%q\n", name, truncateHashForLog(storedHash), truncateHashForLog(currentHash), agentCfg.Command) //nolint:errcheck
 						// Diagnostic: log per-field breakdown to identify the drifting field.
-						var storedBreakdown map[string]string
-						if raw := session.Metadata["core_hash_breakdown"]; raw != "" {
-							_ = json.Unmarshal([]byte(raw), &storedBreakdown)
-						}
-						driftedFields := runtime.CoreFingerprintDriftFields(storedBreakdown, agentCfg)
-						runtime.LogCoreFingerprintDrift(stderr, name, storedBreakdown, agentCfg)
+						driftedFields := runtime.CoreFingerprintDriftFieldsFromJSON(session.Metadata["core_hash_breakdown"], agentCfg)
+						runtime.LogCoreFingerprintDrift(stderr, name, session.Metadata["core_hash_breakdown"], agentCfg)
 						restartedInPlace := false
 						// Attached sessions never get config-drift restarts.
 						// The human will restart when ready; drift applies
@@ -1363,14 +1359,15 @@ func reconcileSessionBeadsTracedWithNamedDemand(
 					storedLive := session.Metadata["started_live_hash"]
 					currentLive := runtime.LiveFingerprint(agentCfg)
 					if storedLive != currentLive {
-						if storedLive == "" && len(agentCfg.SessionLive) == 0 {
+						switch {
+						case storedLive == "" && len(agentCfg.SessionLive) == 0:
 							// No stored hash and no live config — silently
 							// backfill the hash without running anything.
 							_ = store.SetMetadataBatch(session.ID, map[string]string{
 								"live_hash":         currentLive,
 								"started_live_hash": currentLive,
 							})
-						} else if runtime.IsLegacyOrMismatchedVersion(storedLive) {
+						case runtime.IsLegacyOrMismatchedVersion(storedLive):
 							// Stored live hash from a pre-versioning or
 							// version-mismatched binary — silently rebaseline
 							// all four fingerprint fields rather than running
@@ -1387,7 +1384,7 @@ func reconcileSessionBeadsTracedWithNamedDemand(
 									"current_hash": currentLive,
 								}, nil, "")
 							}
-						} else {
+						default:
 							fmt.Fprintf(stdout, "Live config changed for '%s', re-applying...\n", tp.DisplayName()) //nolint:errcheck
 							if err := sp.RunLive(name, agentCfg); err != nil {
 								fmt.Fprintf(stderr, "session reconciler: RunLive %s: %v\n", name, err) //nolint:errcheck
@@ -1446,11 +1443,7 @@ func reconcileSessionBeadsTracedWithNamedDemand(
 							}
 							continue
 						}
-						var storedBreakdown map[string]string
-						if raw := session.Metadata["core_hash_breakdown"]; raw != "" {
-							_ = json.Unmarshal([]byte(raw), &storedBreakdown)
-						}
-						driftedFields := runtime.CoreFingerprintDriftFields(storedBreakdown, agentCfg)
+						driftedFields := runtime.CoreFingerprintDriftFieldsFromJSON(session.Metadata["core_hash_breakdown"], agentCfg)
 						resetConfiguredNamedSessionForConfigDrift(session, store, sp, name, false, "asleep", clk.Now().UTC(), stderr)
 						if trace != nil {
 							trace.recordDecision("reconciler.session.config_drift", tp.TemplateName, name, "config_drift", "repair_in_place", configDriftTracePayload(storedHash, currentHash, driftedFields, nil), nil, "")
