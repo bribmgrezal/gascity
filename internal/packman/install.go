@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/BurntSushi/toml"
+	"github.com/gastownhall/gascity/internal/builtinpacks"
 	"github.com/gastownhall/gascity/internal/config"
 	"github.com/gastownhall/gascity/internal/fsys"
 )
@@ -43,8 +44,14 @@ func ReadCachedPackImports(source, commit string) (map[string]config.Import, err
 	}
 	var imports map[string]config.Import
 	if err := config.WithRepoCacheReadLock(root, func() error {
-		if err := validateCachedRepoCheckout(cachePath, commit); err != nil {
-			return err
+		if builtinpacks.IsSource(source) {
+			if err := builtinpacks.ValidateSyntheticRepo(cachePath, commit); err != nil {
+				return err
+			}
+		} else {
+			if err := validateCachedRepoCheckout(cachePath, commit); err != nil {
+				return err
+			}
 		}
 		var readErr error
 		imports, readErr = readPackImports(packPath)
@@ -65,6 +72,33 @@ func InstallLocked(cityRoot string) (*Lockfile, error) {
 	sources := make([]string, 0, len(lock.Packs))
 	for source := range lock.Packs {
 		sources = append(sources, source)
+	}
+	sort.Strings(sources)
+	for _, source := range sources {
+		pack := lock.Packs[source]
+		if pack.Commit == "" {
+			return nil, fmt.Errorf("lock entry %q is missing commit", source)
+		}
+		if _, err := EnsureRepoInCache(source, pack.Commit); err != nil {
+			return nil, err
+		}
+	}
+	return lock, nil
+}
+
+// InstallLockedBundledPacks restores only bundled pack entries recorded in
+// packs.lock into the shared cache. It never fetches arbitrary remote imports.
+func InstallLockedBundledPacks(cityRoot string) (*Lockfile, error) {
+	lock, err := ReadLockfile(fsys.OSFS{}, cityRoot)
+	if err != nil {
+		return nil, err
+	}
+
+	sources := make([]string, 0, len(lock.Packs))
+	for source := range lock.Packs {
+		if builtinpacks.IsSource(source) {
+			sources = append(sources, source)
+		}
 	}
 	sort.Strings(sources)
 	for _, source := range sources {
