@@ -1071,6 +1071,7 @@ func buildResumeCommand(cityPath string, cfg *config.City, info session.Info, se
 		// Build command with default args and settings, matching the
 		// reconciler's template_resolve.go command construction.
 		command := resolved.CommandString()
+		resumeCommand := resolved.ResumeCommand
 		appendDefaultArgs := func() {
 			if defaultArgs := resolved.ResolveDefaultArgs(); len(defaultArgs) > 0 {
 				command = command + " " + shellquote.Join(defaultArgs)
@@ -1083,6 +1084,9 @@ func buildResumeCommand(cityPath string, cfg *config.City, info session.Info, se
 				command = launchCommand.Command
 			} else {
 				appendDefaultArgs()
+			}
+			if command, err := config.BuildProviderResumeCommand(resolved, overrides); err == nil && strings.TrimSpace(command) != "" {
+				resumeCommand = command
 			}
 		} else {
 			appendDefaultArgs()
@@ -1112,7 +1116,7 @@ func buildResumeCommand(cityPath string, cfg *config.City, info session.Info, se
 		resolvedInfo.Provider = resolved.Name
 		resolvedInfo.ResumeFlag = resolved.ResumeFlag
 		resolvedInfo.ResumeStyle = resolved.ResumeStyle
-		resolvedInfo.ResumeCommand = resolved.ResumeCommand
+		resolvedInfo.ResumeCommand = resumeCommand
 		return session.BuildResumeCommand(resolvedInfo), runtime.Config{
 			WorkDir:                info.WorkDir,
 			ReadyPromptPrefix:      resolved.ReadyPromptPrefix,
