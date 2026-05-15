@@ -748,7 +748,7 @@ export type EventEmitRequest = {
     type: string;
 };
 
-export type EventPayload = AdapterEventPayload | BeadEventPayload | BoundEventPayload | CityCreateSucceededPayload | CityLifecyclePayload | CityUnregisterSucceededPayload | GroupCreatedEventPayload | InboundEventPayload | MailEventPayload | NoPayload | OutboundEventPayload | RequestFailedPayload | SessionCreateSucceededPayload | SessionLifecyclePayload | SessionMessageSucceededPayload | SessionSubmitSucceededPayload | SupervisorFsPressureSkippedTickPayload | UnboundEventPayload | WorkerOperationEventPayload;
+export type EventPayload = AdapterEventPayload | BeadEventPayload | BoundEventPayload | CityCreateSucceededPayload | CityLifecyclePayload | CityUnregisterSucceededPayload | GroupCreatedEventPayload | InboundEventPayload | MailEventPayload | NoPayload | OutboundEventPayload | RequestFailedPayload | RotatedPayload | SessionCreateSucceededPayload | SessionLifecyclePayload | SessionMessageSucceededPayload | SessionSubmitSucceededPayload | SupervisorFsPressureSkippedTickPayload | UnboundEventPayload | WorkerOperationEventPayload;
 
 export type EventStreamEnvelope = {
     actor: string;
@@ -2242,6 +2242,12 @@ export type RigUpdateInputBody = {
     suspended?: boolean;
 };
 
+export type RotatedPayload = {
+    prior_archive: string;
+    prior_first_seq: number;
+    prior_last_seq: number;
+};
+
 export type ScopeGroup = {
     [key: string]: never;
 };
@@ -2814,6 +2820,10 @@ export type SupervisorFsPressureSkippedTickPayload = {
 
 export type SupervisorHealthOutputBody = {
     /**
+     * Build identity (typically a short git commit hash, with "-dirty" suffix when built from an unclean tree). Empty when unavailable.
+     */
+    build_id?: string;
+    /**
      * Cities currently running.
      */
     cities_running: number;
@@ -2904,6 +2914,8 @@ export type TypedEventStreamEnvelope = ({
 } & TypedEventStreamEnvelopeConvoyClosed) | ({
     type: 'convoy.created';
 } & TypedEventStreamEnvelopeConvoyCreated) | ({
+    type: 'events.rotated';
+} & TypedEventStreamEnvelopeEventsRotated) | ({
     type: 'extmsg.adapter_added';
 } & TypedEventStreamEnvelopeExtmsgAdapterAdded) | ({
     type: 'extmsg.adapter_removed';
@@ -3144,6 +3156,20 @@ export type TypedEventStreamEnvelopeCustom = {
     subject?: string;
     ts: string;
     type: string;
+    workflow?: WorkflowEventProjection;
+};
+
+/**
+ * TypedEventStreamEnvelope events.rotated
+ */
+export type TypedEventStreamEnvelopeEventsRotated = {
+    actor: string;
+    message?: string;
+    payload: RotatedPayload;
+    seq: number;
+    subject?: string;
+    ts: string;
+    type: 'events.rotated';
     workflow?: WorkflowEventProjection;
 };
 
@@ -3679,6 +3705,8 @@ export type TypedTaggedEventStreamEnvelope = ({
 } & TypedTaggedEventStreamEnvelopeConvoyClosed) | ({
     type: 'convoy.created';
 } & TypedTaggedEventStreamEnvelopeConvoyCreated) | ({
+    type: 'events.rotated';
+} & TypedTaggedEventStreamEnvelopeEventsRotated) | ({
     type: 'extmsg.adapter_added';
 } & TypedTaggedEventStreamEnvelopeExtmsgAdapterAdded) | ({
     type: 'extmsg.adapter_removed';
@@ -3931,6 +3959,21 @@ export type TypedTaggedEventStreamEnvelopeCustom = {
     subject?: string;
     ts: string;
     type: string;
+    workflow?: WorkflowEventProjection;
+};
+
+/**
+ * TypedTaggedEventStreamEnvelope events.rotated
+ */
+export type TypedTaggedEventStreamEnvelopeEventsRotated = {
+    actor: string;
+    city: string;
+    message?: string;
+    payload: RotatedPayload;
+    seq: number;
+    subject?: string;
+    ts: string;
+    type: 'events.rotated';
     workflow?: WorkflowEventProjection;
 };
 

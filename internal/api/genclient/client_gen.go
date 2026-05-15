@@ -2638,6 +2638,9 @@ type SupervisorFSPressureSkippedTickPayload struct {
 
 // SupervisorHealthOutputBody defines model for SupervisorHealthOutputBody.
 type SupervisorHealthOutputBody struct {
+	// BuildId Build identity (typically a short git commit hash, with "-dirty" suffix when built from an unclean tree). Empty when unavailable.
+	BuildId *string `json:"build_id,omitempty"`
+
 	// CitiesRunning Cities currently running.
 	CitiesRunning int64 `json:"cities_running"`
 
