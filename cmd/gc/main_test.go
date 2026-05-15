@@ -167,6 +167,7 @@ func configureFSPressureForTests() {
 }
 
 func TestMain(m *testing.M) {
+	clearProcessLiveEnvForTests()
 	gcHome, err := os.MkdirTemp("", "gascity-gc-home-*")
 	if err != nil {
 		panic(err)
