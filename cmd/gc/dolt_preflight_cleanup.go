@@ -82,6 +82,9 @@ func staleManagedDoltSocketPaths() []string {
 }
 
 func fileOpenedByAnyProcess(path string) (bool, error) {
+	if open, checked := unixSocketOpenStateFromTable(path); checked {
+		return open, nil
+	}
 	procCtx, procCancel := context.WithTimeout(context.Background(), managedDoltProcTimeout)
 	open, checked := fileOpenedByAnyProcessFromProc(procCtx, path)
 	procErr := procCtx.Err()
@@ -121,6 +124,20 @@ func fileOpenedByAnyProcess(path string) (bool, error) {
 		return false, nil
 	}
 	return false, fmt.Errorf("lsof %s: %w: %s", path, err, strings.TrimSpace(string(out)))
+}
+
+func unixSocketOpenStateFromTable(path string) (bool, bool) {
+	info, err := os.Lstat(path)
+	if err != nil || info.Mode()&os.ModeSocket == 0 {
+		return false, false
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), managedDoltProcTimeout)
+	defer cancel()
+	inodes, checked := unixSocketInodesForPath(ctx, path)
+	if !checked || ctx.Err() != nil {
+		return false, false
+	}
+	return len(inodes) > 0, true
 }
 
 func fileOpenedByAnyProcessFromProc(ctx context.Context, path string) (bool, bool) {
