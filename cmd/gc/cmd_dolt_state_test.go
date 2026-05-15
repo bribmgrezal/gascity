@@ -1150,7 +1150,7 @@ func TestDoltStateExistingManagedCmdReportsReusableOwnedServer(t *testing.T) {
 set -eu
 printf '%s\n' "$*" >> "$INVOCATION_FILE"
 case "$*" in
-  *"sql -q SELECT active_branch()"*)
+  *"sql -r csv -q SELECT COUNT(*) AS cnt FROM information_schema.SCHEMATA"*)
     exit 0
     ;;
   *)
@@ -1218,7 +1218,7 @@ func TestDoltStateExistingManagedCmdFallsBackToPublishedRuntimeState(t *testing.
 set -eu
 printf '%s\n' "$*" >> "$INVOCATION_FILE"
 case "$*" in
-  *"sql -q SELECT active_branch()"*)
+  *"sql -r csv -q SELECT COUNT(*) AS cnt FROM information_schema.SCHEMATA"*)
     exit 0
     ;;
   *)
@@ -1290,7 +1290,7 @@ func TestDoltStateExistingManagedCmdReportsDeletedInodes(t *testing.T) {
 set -eu
 printf '%s\n' "$*" >> "$INVOCATION_FILE"
 case "$*" in
-  *"sql -q SELECT active_branch()"*)
+  *"sql -r csv -q SELECT COUNT(*) AS cnt FROM information_schema.SCHEMATA"*)
     exit 0
     ;;
   *)
@@ -1746,7 +1746,7 @@ func TestDoltStateQueryProbeCmdUsesDoltHelper(t *testing.T) {
 set -eu
 printf '%s\n' "$*" >> "$INVOCATION_FILE"
 case "$*" in
-  *"sql -q SELECT active_branch()"*)
+  *"sql -r csv -q SELECT COUNT(*) AS cnt FROM information_schema.SCHEMATA"*)
     exit 0
     ;;
   *)
@@ -1768,7 +1768,7 @@ esac
 		t.Fatalf("ReadFile(invocation): %v", err)
 	}
 	text := string(invocation)
-	for _, want := range []string{"--host 127.0.0.1", "--port 3311", "--user root", "sql -q SELECT active_branch()"} {
+	for _, want := range []string{"--host 127.0.0.1", "--port 3311", "--user root", "sql -r csv -q SELECT COUNT(*) AS cnt FROM information_schema.SCHEMATA"} {
 		if !strings.Contains(text, want) {
 			t.Fatalf("dolt invocation missing %q: %s", want, text)
 		}
@@ -1783,7 +1783,7 @@ set -eu
 printf '%s\n' "$*" >> "$INVOCATION_FILE"
 case "$*" in
   *"sql -r csv -q SHOW DATABASES"*)
-    printf 'Database\ngascity\ninformation_schema\nmysql\ndolt_cluster\n__gc_probe\n'
+    printf 'Database\ngascity\ninformation_schema\nmysql\ndolt\ndolt_cluster\n__gc_probe\n'
     exit 0
     ;;
   *"CREATE TABLE IF NOT EXISTS"*"__gc_read_only_probe"*)
@@ -1857,7 +1857,7 @@ set -eu
 printf '%s\n' "$*" >> "$INVOCATION_FILE"
 case "$*" in
   *"sql -r csv -q SHOW DATABASES"*)
-    printf 'Database\ninformation_schema\nmysql\ndolt_cluster\nperformance_schema\nsys\n__gc_probe\n'
+    printf 'Database\ninformation_schema\nmysql\ndolt\ndolt_cluster\nperformance_schema\nsys\n__gc_probe\n'
     exit 0
     ;;
   *"CREATE TABLE IF NOT EXISTS"*"__gc_read_only_probe"*)
@@ -1994,11 +1994,11 @@ func TestDoltStateHealthCheckCmdReportsReadOnlyAndConnectionCount(t *testing.T) 
 set -eu
 printf '%s\n' "$*" >> "$INVOCATION_FILE"
 case "$*" in
-  *"sql -q SELECT active_branch()"*)
+  *"sql -r csv -q SELECT COUNT(*) AS cnt FROM information_schema.SCHEMATA"*)
     exit 0
     ;;
   *"sql -r csv -q SHOW DATABASES"*)
-    printf 'Database\ngascity\ninformation_schema\nmysql\ndolt_cluster\n__gc_probe\n'
+    printf 'Database\ngascity\ninformation_schema\nmysql\ndolt\ndolt_cluster\n__gc_probe\n'
     exit 0
     ;;
   *"CREATE TABLE IF NOT EXISTS"*"__gc_read_only_probe"*)
@@ -2045,7 +2045,7 @@ esac
 	if !strings.Contains(text, wantWrite) {
 		t.Fatalf("health-check probe = %s, want %q", text, wantWrite)
 	}
-	for _, want := range []string{"--host 127.0.0.1", "--port 3311", "--user root", "SELECT active_branch()", "information_schema.PROCESSLIST", "SHOW DATABASES"} {
+	for _, want := range []string{"--host 127.0.0.1", "--port 3311", "--user root", "SELECT COUNT(*) AS cnt FROM information_schema.SCHEMATA", "information_schema.PROCESSLIST", "SHOW DATABASES"} {
 		if strings.Contains(text, want) == false {
 			t.Fatalf("dolt invocation missing %q: %s", want, text)
 		}
@@ -2059,11 +2059,11 @@ func TestDoltStateHealthCheckCmdNoUserDatabaseReportsUnknown(t *testing.T) {
 set -eu
 printf '%s\n' "$*" >> "$INVOCATION_FILE"
 case "$*" in
-  *"sql -q SELECT active_branch()"*)
+  *"sql -r csv -q SELECT COUNT(*) AS cnt FROM information_schema.SCHEMATA"*)
     exit 0
     ;;
   *"sql -r csv -q SHOW DATABASES"*)
-    printf 'Database\ninformation_schema\nmysql\ndolt_cluster\nperformance_schema\nsys\n__gc_probe\n'
+    printf 'Database\ninformation_schema\nmysql\ndolt\ndolt_cluster\nperformance_schema\nsys\n__gc_probe\n'
     exit 0
     ;;
   *"sql -r csv -q SELECT COUNT(*) AS cnt FROM information_schema.PROCESSLIST"*)
@@ -2114,7 +2114,7 @@ func TestDoltStateHealthCheckCmdSkipsReadOnlyAndBestEffortCount(t *testing.T) {
 set -eu
 printf '%s\n' "$*" >> "$INVOCATION_FILE"
 case "$*" in
-  *"sql -q SELECT active_branch()"*)
+  *"sql -r csv -q SELECT COUNT(*) AS cnt FROM information_schema.SCHEMATA"*)
     exit 0
     ;;
   *"sql -r csv -q SELECT COUNT(*) AS cnt FROM information_schema.PROCESSLIST"*)
@@ -2153,7 +2153,7 @@ esac
 		t.Fatalf("health-check unexpectedly enumerated databases without --check-read-only: %s", text)
 	}
 	assertNoManagedDoltProbeLegacyTarget(t, "health-check skip-read-only probe", text)
-	for _, want := range []string{"SELECT active_branch()", "information_schema.PROCESSLIST"} {
+	for _, want := range []string{"SELECT COUNT(*) AS cnt FROM information_schema.SCHEMATA", "information_schema.PROCESSLIST"} {
 		if strings.Contains(text, want) == false {
 			t.Fatalf("dolt invocation missing %q: %s", want, text)
 		}
@@ -2186,7 +2186,7 @@ func TestDoltStateHealthCheckCmdReturnsErrExitWhenReadOnlyProbeFails(t *testing.
 set -eu
 printf '%s\n' "$*" >> "$INVOCATION_FILE"
 case "$*" in
-  *"sql -q SELECT active_branch()"*)
+  *"sql -r csv -q SELECT COUNT(*) AS cnt FROM information_schema.SCHEMATA"*)
     exit 0
     ;;
   *"sql -r csv -q SHOW DATABASES"*)
@@ -2224,7 +2224,7 @@ func TestDoltStateWaitReadyCmdReturnsReady(t *testing.T) {
 set -eu
 printf '%s\n' "$*" >> "$INVOCATION_FILE"
 case "$*" in
-  *"sql -q SELECT active_branch()"*)
+  *"sql -r csv -q SELECT COUNT(*) AS cnt FROM information_schema.SCHEMATA"*)
     exit 0
     ;;
   *)
@@ -2285,7 +2285,7 @@ set -eu
 printf '%s
 ' "$*" >> "$INVOCATION_FILE"
 case "$*" in
-  *"sql -q SELECT active_branch()"*)
+  *"sql -r csv -q SELECT COUNT(*) AS cnt FROM information_schema.SCHEMATA"*)
     exit 0
     ;;
   *)
@@ -2583,7 +2583,7 @@ INNERPY
   *"SELECT COUNT(*) AS cnt FROM information_schema.PROCESSLIST"*)
     printf 'cnt\n1\n'
     ;;
-  *"SELECT active_branch()"*)
+  *"SELECT COUNT(*) AS cnt FROM information_schema.SCHEMATA"*)
     exit 0
     ;;
   *"sql -r csv -q SHOW DATABASES"*)
@@ -2728,11 +2728,11 @@ INNERPY
   *"SELECT COUNT(*) AS cnt FROM information_schema.PROCESSLIST"*)
     printf 'cnt\n0\n'
     ;;
-  *"SELECT active_branch()"*)
+  *"SELECT COUNT(*) AS cnt FROM information_schema.SCHEMATA"*)
     exit 0
     ;;
   *"sql -r csv -q SHOW DATABASES"*)
-    printf 'Database\ninformation_schema\nmysql\ndolt_cluster\nperformance_schema\nsys\n__gc_probe\n'
+    printf 'Database\ninformation_schema\nmysql\ndolt\ndolt_cluster\nperformance_schema\nsys\n__gc_probe\n'
     exit 0
     ;;
   *"CREATE TABLE IF NOT EXISTS"*)
@@ -3140,7 +3140,7 @@ INNERPY
   *"SELECT COUNT(*) AS cnt FROM information_schema.PROCESSLIST"*)
     printf 'cnt\n1\n'
     ;;
-  *"SELECT active_branch()"*)
+  *"SELECT COUNT(*) AS cnt FROM information_schema.SCHEMATA"*)
     count=0
     if [ -f "$ACTIVE_BRANCH_COUNT" ]; then
       count=$(cat "$ACTIVE_BRANCH_COUNT")
