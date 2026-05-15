@@ -27,9 +27,12 @@ func newImportMigrateCmd(stdout, stderr io.Writer) *cobra.Command {
 	return cmd
 }
 
-func doImportMigrate(dryRun bool, stdout, stderr io.Writer) int {
-	_ = dryRun
-	fmt.Fprintln(stderr, "gc import migrate has been retired as a PackV1 migration path.")                                              //nolint:errcheck // best-effort stderr
+func doImportMigrate(dryRun bool, _ io.Writer, stderr io.Writer) int {
+	commandName := "gc import migrate"
+	if dryRun {
+		commandName += " --dry-run"
+	}
+	fmt.Fprintf(stderr, "%s has been retired as a PackV1 migration path.\n", commandName)                                               //nolint:errcheck // best-effort stderr
 	fmt.Fprintln(stderr, "Run `gc doctor` to inventory legacy PackV1 surfaces and current PackV2 requirements.")                        //nolint:errcheck // best-effort stderr
 	fmt.Fprintln(stderr, "Run `gc doctor --fix` only for safe mechanical remediation; PackV1 layouts are no longer upgraded in place.") //nolint:errcheck // best-effort stderr
 	return 1

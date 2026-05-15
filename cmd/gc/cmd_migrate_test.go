@@ -15,7 +15,7 @@ func TestDoImportMigrateShowsDoctorGuidance(t *testing.T) {
 		t.Fatalf("stdout = %q, want empty", stdout.String())
 	}
 	for _, want := range []string{
-		"gc import migrate has been retired as a PackV1 migration path.",
+		"gc import migrate --dry-run has been retired as a PackV1 migration path.",
 		"Run `gc doctor` to inventory legacy PackV1 surfaces and current PackV2 requirements.",
 		"Run `gc doctor --fix` only for safe mechanical remediation; PackV1 layouts are no longer upgraded in place.",
 	} {

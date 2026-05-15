@@ -57,14 +57,7 @@ func discoverRootWithOptions(fs fsys.FS, root ScanRoot, opts ScanOptions) ([]Ord
 	return result, nil
 }
 
-func warnDeprecatedPath(opts ScanOptions, format string, args ...any) {
-	if opts.SuppressDeprecatedPathWarnings {
-		return
-	}
-	log.Printf(format, args...)
-}
-
-func discoverFlatFiles(fs fsys.FS, dir string, found map[string]Order, add func(name, source string, data []byte) error, opts ScanOptions) error {
+func discoverFlatFiles(fs fsys.FS, dir string, found map[string]Order, add func(name, source string, data []byte) error, _ ScanOptions) error {
 	entries, err := fs.ReadDir(dir)
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
@@ -92,7 +85,7 @@ func discoverFlatFiles(fs fsys.FS, dir string, found map[string]Order, add func(
 		data, err := fs.ReadFile(source)
 		if err != nil {
 			if !errors.Is(err, os.ErrNotExist) {
-				warnUnreadablePath(opts, "warning: unreadable order path %s: %v", source, err)
+				log.Printf("warning: unreadable order path %s: %v", source, err)
 			}
 			continue
 		}
@@ -118,16 +111,12 @@ func rejectLegacySubdirectoryOrders(fs fsys.FS, dir, hintFmt string) error {
 		name := entry.Name()
 		source := filepath.Join(dir, name, orderFileName)
 		if _, err := fs.ReadFile(source); err == nil {
-			return fmt.Errorf("unsupported PackV1 order path %s; %s", source, fmt.Sprintf(hintFmt, name))
+			return fmt.Errorf("unsupported PackV1 order path %s; "+hintFmt, source, name)
 		} else if !errors.Is(err, os.ErrNotExist) {
 			return fmt.Errorf("reading legacy order path %s: %w", source, err)
 		}
 	}
 	return nil
-}
-
-func warnUnreadablePath(_ ScanOptions, format string, args ...any) {
-	log.Printf(format, args...)
 }
 
 func legacyOrdersDir(formulaLayer string) string {
