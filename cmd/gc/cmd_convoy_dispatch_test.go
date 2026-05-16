@@ -686,11 +686,11 @@ formula_v2 = true
 
 [[rigs]]
 name = "alpha"
-path = "rigs/alpha"
 prefix = "BL"
 `), 0o644); err != nil {
 		t.Fatalf("write city.toml: %v", err)
 	}
+	writeCatalogFile(t, cityDir, ".gc/site.toml", "[[rig]]\nname = \"alpha\"\npath = \"rigs/alpha\"\n")
 	t.Setenv("GC_CITY", cityDir)
 	t.Setenv("GC_BEADS", "file")
 	t.Setenv("GC_BEADS_SCOPE_ROOT", "")
@@ -1649,9 +1649,10 @@ func TestRunWorkflowServeWarnsWhenLegacyRigTraceFileStillExists(t *testing.T) {
 	disableManagedDoltRecoveryForTest(t)
 
 	cityDir := t.TempDir()
-	if err := os.WriteFile(filepath.Join(cityDir, "city.toml"), []byte("[workspace]\nname = \"test-city\"\n\n[daemon]\nformula_v2 = true\n\n[[rigs]]\nname = \"alpha\"\npath = \"rigs/alpha\"\n"), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(cityDir, "city.toml"), []byte("[workspace]\nname = \"test-city\"\n\n[daemon]\nformula_v2 = true\n\n[[rigs]]\nname = \"alpha\"\n"), 0o644); err != nil {
 		t.Fatalf("write city.toml: %v", err)
 	}
+	writeCatalogFile(t, cityDir, ".gc/site.toml", "[[rig]]\nname = \"alpha\"\npath = \"rigs/alpha\"\n")
 	rigRoot := filepath.Join(cityDir, "rigs", "alpha")
 	if err := os.MkdirAll(rigRoot, 0o755); err != nil {
 		t.Fatalf("mkdir rig root: %v", err)
@@ -1700,9 +1701,10 @@ func TestRunWorkflowServeWarnsWhenLegacyEnvRigTraceFileStillExistsOutsideConfigu
 	disableManagedDoltRecoveryForTest(t)
 
 	cityDir := t.TempDir()
-	if err := os.WriteFile(filepath.Join(cityDir, "city.toml"), []byte("[workspace]\nname = \"test-city\"\n\n[daemon]\nformula_v2 = true\n\n[[rigs]]\nname = \"alpha\"\npath = \"rigs/alpha\"\n"), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(cityDir, "city.toml"), []byte("[workspace]\nname = \"test-city\"\n\n[daemon]\nformula_v2 = true\n\n[[rigs]]\nname = \"alpha\"\n"), 0o644); err != nil {
 		t.Fatalf("write city.toml: %v", err)
 	}
+	writeCatalogFile(t, cityDir, ".gc/site.toml", "[[rig]]\nname = \"alpha\"\npath = \"rigs/alpha\"\n")
 	rigRoot := filepath.Join(cityDir, "rigs", "beta")
 	if err := os.MkdirAll(rigRoot, 0o755); err != nil {
 		t.Fatalf("mkdir rig root: %v", err)
@@ -2489,10 +2491,13 @@ func TestRunWorkflowServeOverridesInheritedCityBeadsDir(t *testing.T) {
 	if err := os.MkdirAll(rigDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	cityToml := fmt.Sprintf("[workspace]\nname = \"test-city\"\n\n[daemon]\nformula_v2 = true\n\n[[rigs]]\nname = \"myrig\"\npath = %q\n\n[[agent]]\nname = \"worker\"\ndir = \"myrig\"\n", rigDir)
+	cityToml := "[workspace]\nname = \"test-city\"\n\n[daemon]\nformula_v2 = true\n\n[[rigs]]\nname = \"myrig\"\n"
 	if err := os.WriteFile(filepath.Join(cityDir, "city.toml"), []byte(cityToml), 0o644); err != nil {
 		t.Fatal(err)
 	}
+	writeCatalogFile(t, cityDir, "pack.toml", "[pack]\nname = \"test-city\"\nschema = 2\n")
+	writeCatalogFile(t, cityDir, ".gc/site.toml", fmt.Sprintf("[[rig]]\nname = \"myrig\"\npath = %q\n", rigDir))
+	writeCatalogFile(t, cityDir, "agents/worker/agent.toml", "dir = \"myrig\"\n")
 
 	t.Setenv("GC_CITY", cityDir)
 	// Pollute parent env with a city-scoped BEADS_DIR. Without the fix,
@@ -2558,7 +2563,7 @@ func TestRunWorkflowServeProcessesControlBeadsInAgentStoreScope(t *testing.T) {
 	if err := os.MkdirAll(rigDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	cityToml := fmt.Sprintf(`[workspace]
+	cityToml := `[workspace]
 name = "test-city"
 
 [daemon]
@@ -2566,11 +2571,11 @@ formula_v2 = true
 
 [[rigs]]
 name = "myrig"
-path = %q
-`, rigDir)
+`
 	if err := os.WriteFile(filepath.Join(cityDir, "city.toml"), []byte(cityToml), 0o644); err != nil {
 		t.Fatal(err)
 	}
+	writeCatalogFile(t, cityDir, ".gc/site.toml", fmt.Sprintf("[[rig]]\nname = \"myrig\"\npath = %q\n", rigDir))
 	t.Setenv("GC_CITY", cityDir)
 
 	prevCityFlag := cityFlag
@@ -2831,19 +2836,13 @@ name = "test-city"
 
 [[rigs]]
 name = "rigrepo"
-path = "rigrepo"
-
-[[agent]]
-name = "polecat"
-dir = "rigrepo"
-
-[agent.pool]
-min = 0
-max = 5
 `
 	if err := os.WriteFile(filepath.Join(cityDir, "city.toml"), []byte(cityToml), 0o644); err != nil {
 		t.Fatal(err)
 	}
+	writeCatalogFile(t, cityDir, "pack.toml", "[pack]\nname = \"test-city\"\nschema = 2\n")
+	writeCatalogFile(t, cityDir, ".gc/site.toml", "[[rig]]\nname = \"rigrepo\"\npath = \"rigrepo\"\n")
+	writeCatalogFile(t, cityDir, "agents/polecat/agent.toml", "dir = \"rigrepo\"\nmin_active_sessions = 0\nmax_active_sessions = 5\n")
 
 	t.Setenv("GC_CITY", cityDir)
 	t.Setenv("GC_ALIAS", "rigrepo/furiosa")
@@ -3215,18 +3214,15 @@ func TestRunWorkflowServeExpandsTemplateCommandsWithCityFallback(t *testing.T) {
 	if err := os.MkdirAll(rigDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	cityToml := fmt.Sprintf(`[[rigs]]
+	cityToml := `[[rigs]]
 name = "frontend"
-path = %q
-
-[[agent]]
-name = "worker"
-dir = "frontend"
-work_query = "bd {{.CityName}} {{.Rig}} {{.AgentBase}}"
-`, rigDir)
+`
 	if err := os.WriteFile(filepath.Join(cityDir, "city.toml"), []byte(cityToml), 0o644); err != nil {
 		t.Fatal(err)
 	}
+	writeCatalogFile(t, cityDir, "pack.toml", "[pack]\nname = \"demo-city\"\nschema = 2\n")
+	writeCatalogFile(t, cityDir, ".gc/site.toml", fmt.Sprintf("[[rig]]\nname = \"frontend\"\npath = %q\n", rigDir))
+	writeCatalogFile(t, cityDir, "agents/worker/agent.toml", "dir = \"frontend\"\nwork_query = \"bd {{.CityName}} {{.Rig}} {{.AgentBase}}\"\n")
 
 	prevList := workflowServeList
 	t.Cleanup(func() { workflowServeList = prevList })
@@ -3655,13 +3651,11 @@ name = "test-city"
 
 [beads]
 provider = "file"
-
-[[agent]]
-name = "control-dispatcher"
-start_command = "echo hello"
 `), 0o644); err != nil {
 		t.Fatalf("WriteFile(city.toml): %v", err)
 	}
+	writeCatalogFile(t, cityPath, "pack.toml", "[pack]\nname = \"test-city\"\nschema = 2\n")
+	writeCatalogFile(t, cityPath, "agents/control-dispatcher/agent.toml", "start_command = \"echo hello\"\n")
 	t.Setenv("GC_CITY", cityPath)
 
 	store, err := openStoreAtForCity(cityPath, cityPath)
@@ -3806,11 +3800,11 @@ name = "test-city"
 
 [[rigs]]
 name = "alpha"
-path = "rigs/alpha"
 prefix = "BL"
 `), 0o644); err != nil {
 		t.Fatalf("WriteFile(city.toml): %v", err)
 	}
+	writeCatalogFile(t, cityDir, ".gc/site.toml", "[[rig]]\nname = \"alpha\"\npath = \"rigs/alpha\"\n")
 	t.Setenv("GC_CITY", cityDir)
 	t.Setenv("GC_BEADS", "file")
 	t.Setenv("GC_BEADS_SCOPE_ROOT", "")
@@ -3925,11 +3919,11 @@ name = "test-city"
 
 [[rigs]]
 name = "alpha"
-path = "rigs/alpha"
 prefix = "BL"
 `), 0o644); err != nil {
 		t.Fatalf("WriteFile(city.toml): %v", err)
 	}
+	writeCatalogFile(t, cityDir, ".gc/site.toml", "[[rig]]\nname = \"alpha\"\npath = \"rigs/alpha\"\n")
 	t.Setenv("GC_CITY", cityDir)
 	t.Setenv("GC_BEADS", "file")
 	t.Setenv("GC_BEADS_SCOPE_ROOT", "")
@@ -4047,11 +4041,11 @@ name = "test-city"
 
 [[rigs]]
 name = "alpha"
-path = "rigs/alpha"
 prefix = "BL"
 `), 0o644); err != nil {
 		t.Fatalf("WriteFile(city.toml): %v", err)
 	}
+	writeCatalogFile(t, cityDir, ".gc/site.toml", "[[rig]]\nname = \"alpha\"\npath = \"rigs/alpha\"\n")
 	t.Setenv("GC_CITY", cityDir)
 	t.Setenv("GC_BEADS", "file")
 	t.Setenv("GC_BEADS_SCOPE_ROOT", "")
