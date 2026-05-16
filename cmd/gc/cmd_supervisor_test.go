@@ -3637,6 +3637,9 @@ func TestWaitForSupervisorReadySucceedsWhenAlreadyReadyEvenWithZeroTimeout(t *te
 }
 
 func TestDoSupervisorStartAlreadyRunning(t *testing.T) {
+	if lu, err := user.LookupId(strconv.Itoa(os.Getuid())); err == nil && strings.TrimSpace(lu.HomeDir) != "" {
+		t.Setenv("HOME", lu.HomeDir) // prevent HOME-override guard from firing before the already-running check
+	}
 	t.Setenv("GC_HOME", t.TempDir())
 	t.Setenv("XDG_RUNTIME_DIR", t.TempDir())
 
@@ -3657,6 +3660,9 @@ func TestDoSupervisorStartAlreadyRunning(t *testing.T) {
 }
 
 func TestDoSupervisorStartDetectsSupervisorOnFallbackSocket(t *testing.T) {
+	if lu, err := user.LookupId(strconv.Itoa(os.Getuid())); err == nil && strings.TrimSpace(lu.HomeDir) != "" {
+		t.Setenv("HOME", lu.HomeDir) // prevent HOME-override guard from firing before the already-running check
+	}
 	gcHome := shortTempDir(t, "gc-home-")
 	runtimeDir := shortTempDir(t, "gc-run-")
 	t.Setenv("GC_HOME", gcHome)
