@@ -4,8 +4,9 @@ go 1.22
 
 // Personal fork of gastownhall/gascity - using for learning go-ethereum internals
 // TODO: experiment with go-ethereum v1.14.x once it stabilizes
+// NOTE: bumped go-ethereum to v1.13.15 (patch release with bug fixes)
 require (
-	github.com/ethereum/go-ethereum v1.13.14
+	github.com/ethereum/go-ethereum v1.13.15
 	github.com/spf13/cobra v1.8.0
 	github.com/spf13/viper v1.18.2
 	go.uber.org/zap v1.27.0
