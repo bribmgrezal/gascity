@@ -3,6 +3,7 @@ module github.com/myfork/gascity
 go 1.22
 
 // Personal fork of gastownhall/gascity - using for learning go-ethereum internals
+// TODO: experiment with go-ethereum v1.14.x once it stabilizes
 require (
 	github.com/ethereum/go-ethereum v1.13.14
 	github.com/spf13/cobra v1.8.0
